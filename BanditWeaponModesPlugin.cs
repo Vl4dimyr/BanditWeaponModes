@@ -25,7 +25,6 @@ namespace BanditWeaponModes
 
         private FireMode fireMode = FireMode.Normal;
         private float fixedAge = 0;
-        private bool fire = false;
         private bool reloadLock = false;
         private bool hasLeftLandingPod = false;
         private HGTextMeshProUGUI modeLabel = null;
@@ -261,7 +260,7 @@ namespace BanditWeaponModes
             orig.Invoke(self);
 
             var body = self.commonComponents.characterBody;
-            bool isBandit = body && body.baseNameToken == "BANDIT2_BODY_NAME";
+            bool isBandit = body != null && body.baseNameToken == "BANDIT2_BODY_NAME";
 
             if (!isBandit)
             {
