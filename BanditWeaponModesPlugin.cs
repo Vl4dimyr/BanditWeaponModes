@@ -9,19 +9,25 @@ using EntityStates.Bandit2.Weapon;
 
 namespace BanditWeaponModes
 {
-    enum FireMode { Normal, Spam, DoubleDoubleTap, Count }
+    public enum FireMode { Normal, Spam, DoubleDoubleTap }
 
+    [BepInDependency("com.rune580.riskofoptions", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("com.bepis.r2api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInPlugin("de.userstorm.banditweaponmodes", "BanditWeaponModes", "{VERSION}")]
     [NetworkCompatibility(CompatibilityLevel.NoNeedForSync, VersionStrictness.DifferentModVersionsAreOk)]
     public class BanditWeaponModesPlugin : BaseUnityPlugin
     {
-        public static ConfigEntry<string> DefaultMode { get; set; }
+        public static ConfigEntry<FireMode> DefaultFireMode { get; set; }
         public static ConfigEntry<bool> EnableModeSelectionWithNumberKeys { get; set; }
         public static ConfigEntry<bool> EnableModeSelectionWithMouseWheel { get; set; }
         public static ConfigEntry<bool> EnableModeSelectionWithDPad { get; set; }
-        public static ConfigEntry<int> DelayBetweenDoubleDoubleTaps { get; set; }
-        public static ConfigEntry<int> DelayBetweenShots { get; set; }
+        public static ConfigEntry<float> DelayBetweenDoubleDoubleTaps { get; set; }
+        public static ConfigEntry<float> DelayBetweenShots { get; set; }
+        public static ConfigEntry<KeyboardShortcut> FireModeNormalKey { get; set; }
+        public static ConfigEntry<KeyboardShortcut> FireModeSpamKey { get; set; }
+        public static ConfigEntry<KeyboardShortcut> FireModeDoubleDoubleTapKey { get; set; }
+
+        private static readonly int FireModeCount = Enum.GetNames(typeof(FireMode)).Length;
 
         private FireMode fireMode = FireMode.Normal;
         private float fixedAge = 0;
@@ -33,14 +39,14 @@ namespace BanditWeaponModes
         {
             FireMode newFireMode = fireMode + (forward ? 1 : -1);
 
-            if (newFireMode == FireMode.Count)
+            if ((int)newFireMode == FireModeCount)
             {
                 newFireMode = FireMode.Normal;
             }
 
             if ((int)newFireMode == -1)
             {
-                newFireMode = FireMode.Count - 1;
+                newFireMode = (FireMode)FireModeCount - 1;
             }
 
             fireMode = newFireMode;
@@ -48,11 +54,11 @@ namespace BanditWeaponModes
 
         private void InitConfig()
         {
-            DefaultMode = Config.Bind<string>(
+            DefaultFireMode = Config.Bind<FireMode>(
                 "Settings",
-                "DefaultMode",
-                "Normal",
-                "The mode that is selected on game start. Modes: Normal, Spam, DoubleDoubleTap"
+                "DefaultFireMode",
+                FireMode.Normal,
+                "The fire mode that is selected on game start."
             );
 
             EnableModeSelectionWithNumberKeys = Config.Bind<bool>(
@@ -76,26 +82,63 @@ namespace BanditWeaponModes
                "When set to true modes can be cycled through using the DPad (controller)"
             );
 
-            DelayBetweenDoubleDoubleTaps = Config.Bind<int>(
+            DelayBetweenDoubleDoubleTaps = Config.Bind<float>(
                "Settings",
                "DelayBetweenDoubleDoubleTaps",
                400,
                "The delay (in milliseconds) between the 2nd and 3rd shot when using the DoubleDoubleTap Mode"
             );
 
-            DelayBetweenShots = Config.Bind<int>(
+            DelayBetweenShots = Config.Bind<float>(
                "Settings",
                "DelayBetweenShots",
                125,
                "The delay (in milliseconds) between the shots"
             );
+
+            FireModeNormalKey = Config.Bind<KeyboardShortcut>(
+               "Settings",
+               "FireModeNormalKey",
+               new KeyboardShortcut(KeyCode.Alpha1),
+               "The key that is used to select Normal Mode"
+            );
+
+            FireModeSpamKey = Config.Bind<KeyboardShortcut>(
+               "Settings",
+               "FireModeSpamKey",
+               new KeyboardShortcut(KeyCode.Alpha2),
+               "The key that is used to select Spam Mode"
+            );
+
+            FireModeDoubleDoubleTapKey = Config.Bind<KeyboardShortcut>(
+               "Settings",
+               "FireModeDoubleDoubleTapKey",
+               new KeyboardShortcut(KeyCode.Alpha3),
+               "The key that is used to select DoubleDoubleTap Mode"
+            );
+
+            if (RiskOfOptionsMod.enabled)
+            {
+                RiskOfOptionsMod.Init(
+                    "This mod allows you to choose between 3 firing modes for the bandit's primary weapon"
+                );
+                RiskOfOptionsMod.AddChoiceOption<FireMode>(DefaultFireMode);
+                RiskOfOptionsMod.AddCheckboxOption(EnableModeSelectionWithNumberKeys);
+                RiskOfOptionsMod.AddCheckboxOption(EnableModeSelectionWithMouseWheel);
+                RiskOfOptionsMod.AddCheckboxOption(EnableModeSelectionWithDPad);
+                RiskOfOptionsMod.AddStepSliderOption(DelayBetweenDoubleDoubleTaps, 0, 1000, 5);
+                RiskOfOptionsMod.AddStepSliderOption(DelayBetweenShots, 0, 500, 1);
+                RiskOfOptionsMod.AddKeyBindOption(FireModeNormalKey);
+                RiskOfOptionsMod.AddKeyBindOption(FireModeSpamKey);
+                RiskOfOptionsMod.AddKeyBindOption(FireModeDoubleDoubleTapKey);
+            }
         }
 
         private void HandleConfig()
         {
             try
             {
-                fireMode = (FireMode)Enum.Parse(typeof(FireMode), DefaultMode.Value);
+                fireMode = DefaultFireMode.Value;
             }
             catch (Exception)
             {
@@ -137,21 +180,23 @@ namespace BanditWeaponModes
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            // not using IsDown because it doesn't work while moving
+
+            if (Input.GetKeyDown(FireModeNormalKey.Value.MainKey))
             {
                 fireMode = FireMode.Normal;
 
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Alpha2))
+            if (Input.GetKeyDown(FireModeSpamKey.Value.MainKey))
             {
                 fireMode = FireMode.Spam;
 
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Alpha3))
+            if (Input.GetKeyDown(FireModeDoubleDoubleTapKey.Value.MainKey))
             {
                 fireMode = FireMode.DoubleDoubleTap;
             }
@@ -206,10 +251,10 @@ namespace BanditWeaponModes
         {
             if (fireMode == FireMode.DoubleDoubleTap && charges % 2 == 0)
             {
-                return (float) DelayBetweenDoubleDoubleTaps.Value / 1000f;
+                return DelayBetweenDoubleDoubleTaps.Value / 1000f;
             }
 
-            return (float) DelayBetweenShots.Value / 1000f;
+            return DelayBetweenShots.Value / 1000f;
         }
 
         private void FireLogic(EntityStateMachine self)
