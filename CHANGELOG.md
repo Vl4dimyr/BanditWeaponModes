@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 -  Mod did not work with DLC update
 
-## [1.0.0] - 2021-4-7
+## [1.0.0] - 2021-04-07
 ### Added
 - All project files (GitHub)
 - Pre/post build scripts
