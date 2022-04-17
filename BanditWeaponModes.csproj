@@ -8,6 +8,7 @@
       $(BepInExPath)\core;
       $(BepInExPath)\plugins\tristanmcpherson-R2API\R2API;
       $(BepInExPath)\plugins\RiskofThunder-HookGenPatcher\MMHOOK;
+      $(BepInExPath)\plugins\Rune580-Risk_Of_Options;
       $(RoR2AssemblyPath);
       $(AssemblySearchPaths);
     </AssemblySearchPaths>
@@ -20,7 +21,7 @@
     <GenerateDependencyFile>yiff</GenerateDependencyFile>
     <NoLogo>True</NoLogo>
     <Optimize>True</Optimize>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <TargetName>BanditWeaponModes</TargetName>
   </PropertyGroup>
 
@@ -38,6 +39,7 @@
       UnityEngine.UIModule;
       Unity.TextMeshPro;
       com.unity.multiplayer-hlapi.Runtime;
+      RiskOfOptions;
     ">
       <Private>False</Private>
     </Reference>
